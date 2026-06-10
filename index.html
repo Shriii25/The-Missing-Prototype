@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Detective Challenge: The Missing Prototype</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent: #ff003c; /* Neon crimson accent */
+            --accent-glow: rgba(255, 0, 60, 0.4);
+            --text-main: #f0f0f0;
+            --text-muted: #888888;
+            --success: #00ff88;
+            --error: #ff3366;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(255, 0, 60, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(255, 255, 255, 0.02), transparent 25%);
+        }
+
+        /* Glassmorphism Container */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 40px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+            transition: all 0.4s ease;
+        }
+
+        h1, h2, h3 {
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 20px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin-bottom: 16px;
+            color: #cccccc;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            background: var(--glass-bg);
+            border-radius: 10px;
+            height: 8px;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .stage-indicator {
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        /* Forms and Inputs */
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        /* Radio Options */
+        .option-label {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-label:hover {
+            border-color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        input[type="radio"] {
+            margin-right: 12px;
+            accent-color: var(--accent);
+            transform: scale(1.2);
+        }
+
+        input[type="radio"]:checked + span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        button {
+            background: var(--text-main);
+            color: var(--bg-color);
+            border: none;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Stages */
+        .stage {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .stage.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Case File Specifics */
+        .case-file {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-family: 'Courier New', Courier, monospace; /* Detective report feel */
+        }
+        
+        .case-file::-webkit-scrollbar {
+            width: 8px;
+        }
+        .case-file::-webkit-scrollbar-thumb {
+            background: var(--glass-border);
+            border-radius: 4px;
+        }
+
+        .case-file h3 {
+            color: var(--accent);
+            border-bottom: 1px dashed var(--glass-border);
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+
+        .log-entry {
+            margin-bottom: 8px;
+            padding-left: 10px;
+            border-left: 2px solid var(--glass-border);
+        }
+
+        /* Messages */
+        .message {
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+            display: none;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .message.success {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            display: block;
+        }
+
+        .message.error {
+            background: rgba(255, 51, 102, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(255, 51, 102, 0.2);
+            display: block;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                border: none;
+                padding: 24px;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>AIML Database</h1>
+    <div class="stage-indicator" id="stageIndicator">Registration</div>
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <div id="stage-0" class="stage active">
+        <h2>Investigator Access Portal</h2>
+        <p>Please authenticate to access the case files.</p>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="regName" placeholder="Enter your full name">
+        </div>
+        <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="regEmail" placeholder="Enter your academic email">
+        </div>
+        <div id="regMessage"></div>
+        <button onclick="register()">Authenticate</button>
+    </div>
+
+    <div id="stage-1" class="stage">
+        <h2>Stage 1: Initial Briefing</h2>
+        <p>Review the incident logs carefully. The details matter.</p>
+        
+        <div class="case-file">
+            <h2 style="text-align:center; color:white;">CASE FILE: THE MISSING AI PROTOTYPE</h2>
+            
+            <h3>Incident Report</h3>
+            <p>On 15 July 2026, the AIML Department was preparing for TechFest. A student team had developed an AI project called VisionGuard, which was scheduled to be demonstrated the next morning.</p>
+            <p>At 4:20 PM, the team discovered that the VisionGuard project folder had been deleted from Lab Workstation 03. The folder contained the final model, presentation slides, evaluation reports, and documentation.</p>
+            <p>Investigators collected witness statements, system logs, CCTV records, and other evidence. Your task is to determine who is responsible.</p>
+
+            <h3>Persons of Interest</h3>
+            <p><strong>Rahul Mehta</strong><br>
+            AIML student. Worked on model training. Left the lab before 4 PM. Was not selected to present VisionGuard at TechFest.</p>
+            <p><strong>Priya Shah</strong><br>
+            AIML student. Responsible for finalizing the presentation. Selected as the project presenter.</p>
+            <p><strong>Aman Verma</strong><br>
+            AIML student. Not part of the VisionGuard team. Seen near the AIML corridor that afternoon.</p>
+
+            <h3>Witness Statements</h3>
+            <p><strong>C</strong>ampus preparations for TechFest had kept everyone busy that day.</p>
+            <p><strong>H</strong>owever, several students noticed tension between Rahul and Priya after the presenter announcement.</p>
+            <p><strong>E</strong>veryone knew only one student would represent the team on stage.</p>
+            <p><strong>C</strong>orridor activity was unusually high throughout the afternoon.</p>
+            <p><strong>K</strong>eeping track of who was where became difficult.</p>
+            <p><strong>T</strong>o some students, Aman seemed suspicious because he was repeatedly seen near the lab.</p>
+            <p><strong>H</strong>owever, no one actually reported seeing him enter.</p>
+            <p><strong>E</strong>arlier that afternoon, Rahul appeared frustrated after a discussion with teammates.</p>
+            <p><strong>G</strong>iven the circumstances, rumors spread quickly once the files disappeared.</p>
+            <p><strong>A</strong> few students immediately suspected Aman.</p>
+            <p><strong>P</strong>riya spent most of the afternoon preparing slides.</p>
+            <p><strong>S</strong>everal witnesses mentioned seeing her leave her desk briefly around 4 PM.</p>
+
+            <h3>CCTV Records</h3>
+            <div class="log-entry">3:40 PM - Rahul working at Workstation 03</div>
+            <div class="log-entry">3:46 PM - Rahul exits lab</div>
+            <div class="log-entry">3:58 PM - Aman enters AIML corridor</div>
+            <div class="log-entry">4:02 PM - Priya leaves workstation area</div>
+            <div class="log-entry">4:05 PM - Priya speaking with faculty member outside lab</div>
+            <div class="log-entry">4:08 PM - Priya returns to workstation</div>
+            <div class="log-entry">4:11 PM - Camera feed temporarily interrupted (40 seconds)</div>
+            <div class="log-entry">4:14 PM - Aman visible near Faculty Block</div>
+            <div class="log-entry">4:18 PM - Priya exits lab</div>
+
+            <h3>Access Records</h3>
+            <div class="log-entry">3:12 PM - Rahul enters lab</div>
+            <div class="log-entry">3:18 PM - Priya enters lab</div>
+            <div class="log-entry">3:46 PM - Rahul exits lab</div>
+            <div class="log-entry">4:18 PM - Priya exits lab</div>
+            <p><em>Note: No access-card entry exists for Aman.</em></p>
+
+            <h3>System Activity Log (Workstation 03)</h3>
+            <div class="log-entry">4:07 PM - VisionGuard folder opened</div>
+            <div class="log-entry">4:09 PM - Evaluation report accessed</div>
+            <div class="log-entry">4:10 PM - Files copied to external storage</div>
+            <div class="log-entry">4:11 PM - VisionGuard folder deleted</div>
+            <div class="log-entry">4:11 PM - Recycle Bin emptied</div>
+            <div class="log-entry">4:12 PM - Session ended</div>
+
+            <h3>Team Chat</h3>
+            <div class="log-entry"><strong>Rahul (3:48 PM):</strong> "Need coffee after today. Heading to the canteen."</div>
+            <div class="log-entry"><strong>Priya (4:04 PM):</strong> "Going to ask ma'am one question about the demo."</div>
+            <div class="log-entry"><strong>Priya (4:08 PM):</strong> "Back."</div>
+            <div class="log-entry"><strong>Aman (4:13 PM):</strong> "Anyone know where Prof. Sharma's office is?"</div>
+
+            <h3>Additional Evidence</h3>
+            <p><strong>TechFest Selection Email</strong><br>
+            Sent: 2:30 PM<br>
+            "The team has selected Priya Shah to present VisionGuard during TechFest."</p>
+            
+            <p><strong>Lab Usage Policy</strong><br>
+            - Workstation 03 is shared by project members.<br>
+            - Systems automatically lock after 15 minutes of inactivity.<br>
+            - Students are expected to manually log out when leaving.<br>
+            - Students occasionally forget to log out.</p>
+
+            <p><strong>Canteen Digital Payment Records</strong><br>
+            4:12 PM - Rahul Mehta - ₹40 Coffee<br>
+            4:13 PM - Rahul Mehta - ₹25 Snack</p>
+        </div>
+        <button onclick="nextStage(2)">Start Investigation</button>
+    </div>
+
+    <div id="stage-2" class="stage">
+        <h2>Stage 2: Initial Assessment</h2>
+        <p>Based on your first impression, who seems most suspicious?</p>
+        <div class="form-group">
+            <label class="option-label"><input type="radio" name="suspect" value="Rahul"> <span>Rahul</span></label>
+            <label class="option-label"><input type="radio" name="suspect" value="Priya"> <span>Priya</span></label>
+            <label class="option-label"><input type="radio" name="suspect" value="Aman"> <span>Aman</span></label>
+        </div>
+        <div id="msg-2"></div>
+        <button id="btn-2" onclick="handleStage2()">Submit Assessment</button>
+    </div>
+
+    <div id="stage-3" class="stage">
+        <h2>Stage 3: Subtext Analysis</h2>
+        <p>A hidden message exists within the witness statements. What is it?</p>
+        <div class="form-group">
+            <input type="text" id="hiddenMessage" placeholder="Enter the hidden phrase">
+        </div>
+        <div id="msg-3"></div>
+        <button id="btn-3" onclick="handleStage3()">Verify Discovery</button>
+    </div>
+
+    <div id="stage-4" class="stage">
+        <h2>Stage 4: Timeline Forensics</h2>
+        <p>Which time period deserves closer investigation?</p>
+        <div class="form-group">
+            <label class="option-label"><input type="radio" name="timeline" value="A"> <span>A) 3:12 PM - 3:40 PM</span></label>
+            <label class="option-label"><input type="radio" name="timeline" value="B"> <span>B) 3:46 PM - 4:12 PM</span></label>
+            <label class="option-label"><input type="radio" name="timeline" value="C"> <span>C) 4:14 PM - 4:18 PM</span></label>
+        </div>
+        <div id="msg-4"></div>
+        <button id="btn-4" onclick="handleStage4()">Analyze Timeline</button>
+    </div>
+
+    <div id="stage-5" class="stage">
+        <h2>Stage 5: Alibi Verification</h2>
+        <p>Rahul claimed he was heading to the canteen at 3:48 PM. What is the first evidence confirming he was actually there?</p>
+        <div class="form-group">
+            <input type="text" id="canteenTime" placeholder="e.g. 5:00 PM">
+        </div>
+        <div id="msg-5"></div>
+        <button id="btn-5" onclick="handleStage5()">Verify Alibi</button>
+    </div>
+
+    <div id="stage-6" class="stage">
+        <h2>Stage 6: Psychological Profile</h2>
+        <p>Which piece of evidence suggests a possible motive?</p>
+        <div class="form-group">
+            <label class="option-label"><input type="radio" name="motive" value="A"> <span>A) Aman asking for directions</span></label>
+            <label class="option-label"><input type="radio" name="motive" value="B"> <span>B) TechFest Selection Email</span></label>
+            <label class="option-label"><input type="radio" name="motive" value="C"> <span>C) Priya speaking with faculty</span></label>
+        </div>
+        <div id="msg-6"></div>
+        <button id="btn-6" onclick="handleStage6()">Establish Motive</button>
+    </div>
+
+    <div id="stage-7" class="stage">
+        <h2>Final Investigation Report</h2>
+        <p>Compile your findings to conclude the investigation.</p>
+        
+        <div class="form-group">
+            <label>Who is the culprit?</label>
+            <input type="text" id="finalCulprit" required>
+        </div>
+        <div class="form-group">
+            <label>Supporting Evidence #1</label>
+            <textarea id="ev1" rows="2" required></textarea>
+        </div>
+        <div class="form-group">
+            <label>Supporting Evidence #2</label>
+            <textarea id="ev2" rows="2" required></textarea>
+        </div>
+        <div class="form-group">
+            <label>Supporting Evidence #3</label>
+            <textarea id="ev3" rows="2" required></textarea>
+        </div>
+        <div class="form-group">
+            <label>Most Useful AI Prompt Used</label>
+            <textarea id="aiPrompt" rows="2" placeholder="e.g. Analyze the timeline anomalies between..." required></textarea>
+        </div>
+        <div id="msg-7"></div>
+        <button id="submitBtn" onclick="submitFinal()">Submit Official Report</button>
+    </div>
+
+    <div id="stage-8" class="stage">
+        <h2 style="color: var(--success); text-align: center; margin-top: 40px;">INVESTIGATION SUCCESSFULLY SUBMITTED</h2>
+        <p style="text-align: center; font-size: 1.1rem; margin-top: 20px;">Thank you for participating in the AI Detective Challenge.</p>
+        <p style="text-align: center;">Your responses have been recorded successfully. Results and the official solution will be shared after all investigations have been reviewed.</p>
+    </div>
+
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    const TOTAL_STAGES = 7;
+
+    // --- STATE MANAGEMENT ---
+    let state = JSON.parse(localStorage.getItem('aiDetectiveState')) || {
+        currentStage: 0,
+        data: {}
+    };
+
+    // --- ANTI-CHEATING ---
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.addEventListener('keydown', event => {
+        if (event.keyCode === 123 || 
+           (event.ctrlKey && event.shiftKey && (event.keyCode === 73 || event.keyCode === 74 || event.keyCode === 67)) ||
+           (event.ctrlKey && event.keyCode === 85)) {
+            event.preventDefault();
+            alert('Security Protocol Active: Inspection tools have been disabled.');
+        }
+    });
+
+    // --- INIT ---
+    window.onload = () => {
+        if (state.currentStage > 0 && state.currentStage <= TOTAL_STAGES) {
+            updateUI(state.currentStage);
+        } else if (state.currentStage > TOTAL_STAGES) {
+            updateUI(8); // Show success if already completed
+        }
+    };
+
+    function updateUI(stageNum) {
+        // Hide all stages
+        document.querySelectorAll('.stage').forEach(el => el.classList.remove('active'));
+        
+        // Show target stage
+        document.getElementById(`stage-${stageNum}`).classList.add('active');
+        
+        // Update Progress
+        const progressPercentage = (stageNum / TOTAL_STAGES) * 100;
+        document.getElementById('progressBar').style.width = `${Math.min(progressPercentage, 100)}%`;
+        
+        // Update Indicator Text
+        const indicator = document.getElementById('stageIndicator');
+        if (stageNum === 0) indicator.innerText = "Registration";
+        else if (stageNum === 8) indicator.innerText = "Case Closed";
+        else indicator.innerText = `Stage ${stageNum} of ${TOTAL_STAGES}`;
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function saveProgress(stageNum) {
+        state.currentStage = stageNum;
+        localStorage.setItem('aiDetectiveState', JSON.stringify(state));
+        updateUI(stageNum);
+    }
+
+    function showMessage(elementId, text, type) {
+        const el = document.getElementById(elementId);
+        el.className = `message ${type}`;
+        el.innerText = text;
+    }
+
+    function nextStage(num) {
+        saveProgress(num);
+    }
+
+    // --- STAGE LOGIC ---
+
+    function register() {
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!name) {
+            showMessage('regMessage', 'Name cannot be empty.', 'error');
+            return;
+        }
+        if (!emailRegex.test(email)) {
+            showMessage('regMessage', 'Please enter a valid email address.', 'error');
+            return;
+        }
+
+        state.data.name = name;
+        state.data.email = email;
+        showMessage('regMessage', 'Registration Successful', 'success');
+        
+        setTimeout(() => nextStage(1), 1000);
+    }
+
+    function handleStage2() {
+        const selected = document.querySelector('input[name="suspect"]:checked');
+        if (!selected) {
+            showMessage('msg-2', 'Please select a suspect.', 'error');
+            return;
+        }
+        state.data.initialSuspect = selected.value;
+        showMessage('msg-2', 'Interesting choice. Good investigators support conclusions with evidence.', 'success');
+        
+        const btn = document.getElementById('btn-2');
+        btn.innerText = "Continue";
+        btn.onclick = () => nextStage(3);
+    }
+
+    function handleStage3() {
+        const answer = document.getElementById('hiddenMessage').value.trim().toLowerCase().replace(/[^a-z]/g, '');
+        
+        if (answer === 'checkthegaps') {
+            state.data.hiddenMessage = document.getElementById('hiddenMessage').value;
+            showMessage('msg-3', 'Excellent. Investigators often find answers in overlooked details.', 'success');
+            const btn = document.getElementById('btn-3');
+            btn.innerText = "Continue";
+            btn.onclick = () => nextStage(4);
+        } else {
+            showMessage('msg-3', 'The witnesses may be telling you more than they realize.', 'error');
+        }
+    }
+
+    function handleStage4() {
+        const selected = document.querySelector('input[name="timeline"]:checked');
+        if (!selected) {
+            showMessage('msg-4', 'Please select a time period.', 'error');
+            return;
+        }
+
+        if (selected.value === 'B') {
+            state.data.timelineAnswer = selected.value;
+            showMessage('msg-4', 'There appears to be an unexplained gap in the timeline.', 'success');
+            const btn = document.getElementById('btn-4');
+            btn.innerText = "Continue";
+            btn.onclick = () => nextStage(5);
+        } else {
+            showMessage('msg-4', 'Review the timeline more carefully.', 'error');
+        }
+    }
+
+    function handleStage5() {
+        const answer = document.getElementById('canteenTime').value.trim();
+        const formatted = answer.replace(/[^0-9]/g, ''); // Extract just numbers
+
+        if (formatted === '412') {
+            state.data.missingTimeAnswer = answer;
+            showMessage('msg-5', "Good observation. Rahul's movements between 3:48 PM and 4:12 PM are not fully accounted for.", 'success');
+            const btn = document.getElementById('btn-5');
+            btn.innerText = "Continue";
+            btn.onclick = () => nextStage(6);
+        } else {
+            showMessage('msg-5', 'Check the documentary evidence again.', 'error');
+        }
+    }
+
+    function handleStage6() {
+        const selected = document.querySelector('input[name="motive"]:checked');
+        if (!selected) {
+            showMessage('msg-6', 'Please select an option.', 'error');
+            return;
+        }
+
+        if (selected.value === 'B') {
+            state.data.motiveAnswer = selected.value;
+            showMessage('msg-6', "The presenter announcement may have influenced someone's actions.", 'success');
+            const btn = document.getElementById('btn-6');
+            btn.innerText = "Continue";
+            btn.onclick = () => nextStage(7);
+        } else {
+            showMessage('msg-6', 'Think about what drives academic sabotage.', 'error');
+        }
+    }
+
+    async function submitFinal() {
+        const culprit = document.getElementById('finalCulprit').value.trim();
+        const ev1 = document.getElementById('ev1').value.trim();
+        const ev2 = document.getElementById('ev2').value.trim();
+        const ev3 = document.getElementById('ev3').value.trim();
+        const aiPrompt = document.getElementById('aiPrompt').value.trim();
+
+        if (!culprit || !ev1 || !ev2 || !ev3 || !aiPrompt) {
+            showMessage('msg-7', 'All fields are required to close the case.', 'error');
+            return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Transmitting to Secure Server...";
+
+        // Back to clean JSON for our own backend
+        const payload = {
+            Timestamp: new Date().toISOString(),
+            FullName: state.data.name,
+            EmailAddress: state.data.email,
+            InitialSuspect: state.data.initialSuspect,
+            HiddenMessageAnswer: state.data.hiddenMessage,
+            TimelineAnswer: state.data.timelineAnswer,
+            MissingTimeAnswer: state.data.missingTimeAnswer,
+            MotiveAnswer: state.data.motiveAnswer,
+            FinalCulprit: culprit,
+            SupportingEvidence1: ev1,
+            SupportingEvidence2: ev2,
+            SupportingEvidence3: ev3,
+            MostUsefulAIPrompt: aiPrompt
+        };
+
+        try {
+            // We now hit our own hidden proxy endpoint instead of Google
+            const response = await fetch('/api/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Server rejected submission");
+
+            localStorage.removeItem('aiDetectiveState'); 
+            state.currentStage = 8;
+            updateUI(8);
+            
+        } catch (error) {
+            console.error("Submission Error: ", error);
+            showMessage('msg-7', 'Transmission failed. Check network connection and try again.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Submit Official Report";
+        }
+    }
+</script>
+
+</body>
+</html>
